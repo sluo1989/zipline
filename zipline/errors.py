@@ -666,3 +666,10 @@ class ScheduleFunctionWithoutCalendar(ZiplineError):
         "To use schedule_function, the TradingAlgorithm must be running on an "
         "ExchangeTradingSchedule, rather than {schedule}."
     )
+
+
+class UnsupportedPipelineColumn(ZiplineError):
+    msg = (
+        "Adding single-column terms as pipeline columns is not currently "
+        "supported."
+    )

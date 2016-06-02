@@ -7,9 +7,11 @@ import re
 
 from numpy import where, isnan, nan, zeros
 
+from zipline.assets import Asset
 from zipline.lib.labelarray import LabelArray
 from zipline.lib.quantiles import quantiles
 from zipline.pipeline.api_utils import restrict_to_dtype
+from zipline.pipeline.slice import Slice
 from zipline.pipeline.term import ComputableTerm, NotSpecified
 from zipline.utils.compat import unicode
 from zipline.utils.input_validation import expect_types
@@ -52,6 +54,10 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
     # Used by RestrictedDTypeMixin
     ALLOWED_DTYPES = (int64_dtype, categorical_dtype)
     categories = NotSpecified
+
+    @expect_types(key=Asset)
+    def __getitem__(self, key):
+        return ClassifierSlice(self, key)
 
     def isnull(self):
         """
@@ -370,6 +376,10 @@ class CustomClassifier(PositiveWindowLengthMixin,
         # categories for a LabelArray are until it's actually been loaded, so
         # we need to look at the underlying data.
         return windows[0].data.empty_like(shape)
+
+
+class ClassifierSlice(Slice, Classifier, SingleInputMixin):
+    pass
 
 
 class Latest(LatestMixin, CustomClassifier):

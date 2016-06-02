@@ -4,12 +4,13 @@ filter.py
 from itertools import chain
 from operator import attrgetter
 
-
 from numpy import (
     float64,
     nan,
     nanpercentile,
 )
+
+from zipline.assets import Asset
 from zipline.errors import (
     BadPercentileBounds,
     NonExistentAssetInTimeFrame,
@@ -17,6 +18,12 @@ from zipline.errors import (
 )
 from zipline.lib.labelarray import LabelArray
 from zipline.lib.rank import is_missing
+from zipline.pipeline.expression import (
+    BadBinaryOperator,
+    FILTER_BINOPS,
+    method_name_for_op,
+    NumericalExpression,
+)
 from zipline.pipeline.mixins import (
     CustomTermMixin,
     LatestMixin,
@@ -24,13 +31,8 @@ from zipline.pipeline.mixins import (
     RestrictedDTypeMixin,
     SingleInputMixin,
 )
+from zipline.pipeline.slice import Slice
 from zipline.pipeline.term import ComputableTerm, Term
-from zipline.pipeline.expression import (
-    BadBinaryOperator,
-    FILTER_BINOPS,
-    method_name_for_op,
-    NumericalExpression,
-)
 from zipline.utils.input_validation import expect_types
 from zipline.utils.numpy_utils import bool_dtype, repeat_first_axis
 
@@ -185,6 +187,10 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
     )
 
     __invert__ = unary_operator('~')
+
+    @expect_types(key=Asset)
+    def __getitem__(self, key):
+        return FilterSlice(self, key)
 
     def _validate(self):
         # Run superclass validation first so that we handle `dtype not passed`
@@ -421,6 +427,10 @@ class ArrayPredicate(SingleInputMixin, Filter):
     def _compute(self, arrays, dates, assets, mask):
         data = arrays[0]
         return self._op(data, *self._opargs) & mask
+
+
+class FilterSlice(Slice, Filter, SingleInputMixin):
+    pass
 
 
 class Latest(LatestMixin, CustomFilter):

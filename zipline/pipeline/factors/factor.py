@@ -7,6 +7,7 @@ from numbers import Number
 
 from numpy import inf, where
 
+from zipline.assets import Asset
 from zipline.errors import UnknownRankMethod
 from zipline.lib.normalize import naive_grouped_rowwise_apply
 from zipline.lib.rank import masked_rankdata_2d
@@ -42,6 +43,7 @@ from zipline.pipeline.filters import (
     PercentileFilter,
     NullFilter,
 )
+from zipline.pipeline.slice import Slice
 from zipline.utils.functional import with_doc, with_name
 from zipline.utils.input_validation import expect_types
 from zipline.utils.math_utils import nanmean, nanstd
@@ -1232,6 +1234,14 @@ class CustomFactor(PositiveWindowLengthMixin, CustomTermMixin, Factor):
                 )
             )
         return (RecarrayField(self, attr) for attr in self.outputs)
+
+    @expect_types(key=Asset)
+    def __getitem__(self, key):
+        return FactorSlice(self, key)
+
+
+class FactorSlice(Slice, Factor, SingleInputMixin):
+    pass
 
 
 class RecarrayField(SingleInputMixin, Factor):

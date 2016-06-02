@@ -7,6 +7,7 @@ from weakref import WeakValueDictionary
 
 from numpy import array, dtype as dtype_class, ndarray
 from six import with_metaclass
+
 from zipline.errors import (
     DTypeNotSpecified,
     InvalidOutputName,
@@ -53,6 +54,9 @@ class Term(with_metaclass(ABCMeta, object)):
     # Determines if a term is safe to be used as a windowed input.
     window_safe = False
 
+    # The dimensions of the term's output (1D or 2D).
+    ndim = 2
+
     _term_cache = WeakValueDictionary()
 
     def __new__(cls,
@@ -60,6 +64,7 @@ class Term(with_metaclass(ABCMeta, object)):
                 dtype=dtype,
                 missing_value=missing_value,
                 window_safe=NotSpecified,
+                ndim=NotSpecified,
                 # params is explicitly not allowed to be passed to an instance.
                 *args,
                 **kwargs):
@@ -81,6 +86,10 @@ class Term(with_metaclass(ABCMeta, object)):
             dtype = cls.dtype
         if missing_value is NotSpecified:
             missing_value = cls.missing_value
+        if ndim is NotSpecified:
+            ndim = cls.ndim
+        if ndim == 1:
+            window_safe = True
         if window_safe is NotSpecified:
             window_safe = cls.window_safe
 
@@ -96,6 +105,7 @@ class Term(with_metaclass(ABCMeta, object)):
             dtype=dtype,
             missing_value=missing_value,
             window_safe=window_safe,
+            ndim=ndim,
             params=params,
             *args, **kwargs
         )
@@ -109,6 +119,7 @@ class Term(with_metaclass(ABCMeta, object)):
                     dtype=dtype,
                     missing_value=missing_value,
                     window_safe=window_safe,
+                    ndim=ndim,
                     params=params,
                     *args, **kwargs
                 )
@@ -185,6 +196,7 @@ class Term(with_metaclass(ABCMeta, object)):
                          dtype,
                          missing_value,
                          window_safe,
+                         ndim,
                          params):
         """
         Return the identity of the Term that would be constructed from the
@@ -197,9 +209,9 @@ class Term(with_metaclass(ABCMeta, object)):
         This is a classmethod so that it can be called from Term.__new__ to
         determine whether to produce a new instance.
         """
-        return (cls, domain, dtype, missing_value, window_safe, params)
+        return (cls, domain, dtype, missing_value, window_safe, ndim, params)
 
-    def _init(self, domain, dtype, missing_value, window_safe, params):
+    def _init(self, domain, dtype, missing_value, window_safe, ndim, params):
         """
         Parameters
         ----------
@@ -214,6 +226,7 @@ class Term(with_metaclass(ABCMeta, object)):
         self.dtype = dtype
         self.missing_value = missing_value
         self.window_safe = window_safe
+        self.ndim = ndim
 
         for name, value in params:
             if hasattr(self, name):

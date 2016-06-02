@@ -148,6 +148,18 @@ class CustomTermMixin(object):
             out = full(shape, missing_value, dtype=self.dtype)
         return out
 
+    def _format_inputs(self, windows, column_mask):
+        inputs = []
+        for input_ in windows:
+            window = next(input_)
+            try:
+                inputs.append(window[:, column_mask])
+            except IndexError:
+                # Ensure the input is a single column.
+                assert window.shape[1] == 1
+                inputs.append(window)
+        return inputs
+
     def _compute(self, windows, dates, assets, mask):
         """
         Call the user's `compute` function on each window with a pre-built
@@ -155,22 +167,26 @@ class CustomTermMixin(object):
         """
         compute = self.compute
         params = self.params
-        out = self._allocate_output(windows, mask.shape)
+
+        shape = (len(mask), 1) if self.ndim == 1 else mask.shape
+        out = self._allocate_output(windows, shape)
 
         with self.ctx:
             for idx, date in enumerate(dates):
-                col_mask = mask[idx]
-                masked_out = out[idx][col_mask]
+                # Never apply a mask to 1D outputs.
+                col_mask = array([True]) if self.ndim == 1 else mask[idx]
                 masked_assets = assets[col_mask]
+                out_row = out[idx][col_mask]
+                inputs = self._format_inputs(windows, col_mask)
 
                 compute(
                     date,
                     masked_assets,
-                    masked_out,
-                    *(next(w)[:, col_mask] for w in windows),
+                    out_row,
+                    *inputs,
                     **params
                 )
-                out[idx][col_mask] = masked_out
+                out[idx][col_mask] = out_row
         return out
 
     def short_repr(self):

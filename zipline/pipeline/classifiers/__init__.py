@@ -1,5 +1,6 @@
 from .classifier import (
     Classifier,
+    ClassifierSlice,
     CustomClassifier,
     Quantiles,
     Everything,
@@ -8,6 +9,7 @@ from .classifier import (
 
 __all__ = [
     'Classifier',
+    'ClassifierSlice',
     'CustomClassifier',
     'Everything',
     'Latest',
