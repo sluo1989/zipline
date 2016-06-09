@@ -1,12 +1,12 @@
 
-from numpy import searchsorted
-from scipy.stats import linregress
-
 from zipline.pipeline.filters import SingleAsset
-from zipline.pipeline.mixins import SingleInputMixin
 from zipline.pipeline.term import AssetExists, NotSpecified
 
-from .factor import CustomFactor, RollingPearson, RollingSpearman
+from .factor import (
+    RollingLinearRegression,
+    RollingPearson,
+    RollingSpearman,
+)
 from .technical import Returns
 
 
@@ -149,7 +149,7 @@ class RollingSpearmanOfReturns(RollingSpearman):
         )
 
 
-class RollingLinearRegressionOfReturns(CustomFactor, SingleInputMixin):
+class RollingLinearRegressionOfReturns(RollingLinearRegression):
     """
     Perform an ordinary least-squares regression predicting the returns of all
     other assets on the given asset.
@@ -246,46 +246,19 @@ class RollingLinearRegressionOfReturns(CustomFactor, SingleInputMixin):
     :class:`zipline.pipeline.factors.technical.RollingPearsonOfReturns`
     :class:`zipline.pipeline.factors.technical.RollingSpearmanOfReturns`
     """
-    outputs = ['alpha', 'beta', 'r_value', 'p_value', 'stderr']
-    params = ['target']
-
     def __new__(cls,
                 target,
                 returns_length,
                 regression_length,
-                mask=NotSpecified,
-                **kwargs):
-        if mask is NotSpecified:
-            mask = AssetExists()
-
-        # Make sure we do not filter out the asset of interest.
-        mask = mask | SingleAsset(asset=target)
-
+                mask=NotSpecified):
+        returns = Returns(
+            window_length=returns_length,
+            mask=(AssetExists() | SingleAsset(asset=target)),
+        )
         return super(RollingLinearRegressionOfReturns, cls).__new__(
             cls,
-            target=target,
-            inputs=[Returns(window_length=returns_length)],
-            window_length=regression_length,
+            target_factor=returns,
+            target_slice=returns[target],
+            regression_length=regression_length,
             mask=mask,
-            **kwargs
         )
-
-    def compute(self, today, assets, out, returns, target):
-        asset_col = searchsorted(assets.values, target.sid)
-        my_asset = returns[:, asset_col]
-
-        alpha = out.alpha
-        beta = out.beta
-        r_value = out.r_value
-        p_value = out.p_value
-        stderr = out.stderr
-        for i in range(len(out)):
-            other_asset = returns[:, i]
-            regr_results = linregress(y=other_asset, x=my_asset)
-            # `linregress` returns its results in the following order:
-            # slope, intercept, r-value, p-value, stderr
-            alpha[i] = regr_results[1]
-            beta[i] = regr_results[0]
-            r_value[i] = regr_results[2]
-            p_value[i] = regr_results[3]
-            stderr[i] = regr_results[4]

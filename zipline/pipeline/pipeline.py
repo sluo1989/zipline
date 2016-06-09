@@ -39,7 +39,7 @@ class Pipeline(object):
 
         if columns is None:
             columns = {}
-        for term in columns.itervalues():
+        for term in columns.values():
             if term.ndim == 1:
                 raise UnsupportedPipelineColumn()
         self._columns = columns

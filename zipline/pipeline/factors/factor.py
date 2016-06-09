@@ -6,7 +6,11 @@ from operator import attrgetter
 from numbers import Number
 
 from numpy import inf, where
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import (
+    linregress,
+    pearsonr,
+    spearmanr,
+)
 
 from zipline.assets import Asset
 from zipline.errors import UnknownRankMethod
@@ -635,6 +639,14 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
                          correlation_length,
                          mask=NotSpecified):
         return RollingSpearman(self, target_slice, correlation_length, mask)
+
+    def rolling_linear_regression(self,
+                                  target_slice,
+                                  regression_length,
+                                  mask=NotSpecified):
+        return RollingLinearRegression(
+            self, target_slice, regression_length, mask,
+        )
 
     @expect_types(bins=int, mask=(Filter, NotSpecifiedType))
     def quantiles(self, bins, mask=NotSpecified):
@@ -1329,3 +1341,37 @@ class RollingSpearman(_RollingCorrelation):
         for i in range(len(out)):
             # spearmanr returns the R-value and the P-value.
             out[i] = spearmanr(factor_data[:, i], slice_data_column)[0]
+
+
+class RollingLinearRegression(CustomFactor, SingleInputMixin):
+    outputs = ['alpha', 'beta', 'r_value', 'p_value', 'stderr']
+
+    def __new__(cls,
+                target_factor,
+                target_slice,
+                regression_length,
+                mask=NotSpecified):
+        return super(RollingLinearRegression, cls).__new__(
+            cls,
+            inputs=[target_factor, target_slice],
+            window_length=regression_length,
+            mask=mask,
+        )
+
+    def compute(self, today, assets, out, factor_data, slice_data):
+        slice_data_column = slice_data[:, 0]
+
+        alpha = out.alpha
+        beta = out.beta
+        r_value = out.r_value
+        p_value = out.p_value
+        stderr = out.stderr
+        for i in range(len(out)):
+            regr_results = linregress(y=factor_data[:, i], x=slice_data_column)
+            # `linregress` returns its results in the following order:
+            # slope, intercept, r-value, p-value, stderr
+            alpha[i] = regr_results[1]
+            beta[i] = regr_results[0]
+            r_value[i] = regr_results[2]
+            p_value[i] = regr_results[3]
+            stderr[i] = regr_results[4]

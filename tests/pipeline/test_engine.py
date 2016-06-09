@@ -1361,38 +1361,68 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
         Tests for the built-in factor `RollingLinearRegressionOfReturns`.
         """
         my_asset_column = 0
-        start_date_index = 6
-        end_date_index = 10
+        start_date_index = 5
+        end_date_index = 9
 
-        assets = self.asset_finder.retrieve_all(self.sids)
+        sids = self.sids
+        dates = self.dates
+        assets = self.asset_finder.retrieve_all(sids)
         my_asset = assets[my_asset_column]
-        my_asset_filter = (AssetID() != (my_asset_column + 1))
         num_days = end_date_index - start_date_index + 1
+        num_assets = len(assets)
+
+        returns = Returns(window_length=returns_length)
+
+        cascading_mask = \
+            AssetIDPlusDay() < (sids[-1] + dates[start_date_index].day)
+        expected_cascading_mask_result = make_cascading_boolean_array(
+            shape=(num_days, num_assets),
+        )
+
+        alternating_mask = (AssetIDPlusDay() % 2).eq(0)
+        expected_alternating_mask_result = make_alternating_boolean_array(
+            shape=(num_days, num_assets),
+        )
+
+        expected_no_mask_result = full(
+            shape=(num_days, num_assets), fill_value=True, dtype=bool,
+        )
+
+        masks = cascading_mask, alternating_mask, NotSpecified
+        expected_mask_results = (
+            expected_cascading_mask_result,
+            expected_alternating_mask_result,
+            expected_no_mask_result,
+        )
 
         # The order of these is meant to align with the output of `linregress`.
         outputs = ['beta', 'alpha', 'r_value', 'p_value', 'stderr']
 
-        # Our regression factor requires that its target asset is not filtered
-        # out, so make sure that masking out our target asset does not take
-        # effect. That is, a filter which filters out only our target asset
-        # should produce the same result as if no mask was passed at all.
-        for mask in (NotSpecified, my_asset_filter):
+        for mask, expected_mask in zip(masks, expected_mask_results):
             regression_factor = RollingLinearRegressionOfReturns(
                 target=my_asset,
                 returns_length=returns_length,
                 regression_length=regression_length,
                 mask=mask,
             )
-            results = self.engine.run_pipeline(
-                Pipeline(
-                    columns={
-                        output: getattr(regression_factor, output)
-                        for output in outputs
-                    },
-                ),
-                self.dates[start_date_index],
-                self.dates[end_date_index],
+
+            pipeline = Pipeline(
+                columns={
+                    output: getattr(regression_factor, output)
+                    for output in outputs
+                },
             )
+
+            if mask is not NotSpecified:
+                pipeline.add(mask, 'mask')
+
+            results = self.engine.run_pipeline(
+                pipeline, dates[start_date_index], dates[end_date_index],
+            )
+            if mask is not NotSpecified:
+                mask_results = results['mask'].unstack()
+                check_arrays(mask_results.values, expected_mask)
+
             output_results = {}
             expected_output_results = {}
             for output in outputs:
@@ -1405,11 +1435,10 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
             # prior to our start date. This is because we need
             # (regression_length - 1) extra days of returns to compute our
             # expected regressions.
-            returns = Returns(window_length=returns_length)
             results = self.engine.run_pipeline(
                 Pipeline(columns={'returns': returns}),
-                self.dates[start_date_index - (regression_length - 1)],
-                self.dates[end_date_index],
+                dates[start_date_index - (regression_length - 1)],
+                dates[end_date_index],
             )
             returns_results = results['returns'].unstack()
 
@@ -1432,14 +1461,13 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
                             expected_regression_results[i]
 
             for output in outputs:
-                assert_frame_equal(
-                    output_results[output],
-                    DataFrame(
-                        expected_output_results[output],
-                        index=self.dates[start_date_index:end_date_index + 1],
-                        columns=assets,
-                    ),
+                output_result = output_results[output]
+                expected_output_result = DataFrame(
+                    where(expected_mask, expected_output_results[output], nan),
+                    index=dates[start_date_index:end_date_index + 1],
+                    columns=assets,
                 )
+                assert_frame_equal(output_result, expected_output_result)
 
     def test_correlation_and_regression_with_bad_asset(self):
         """
