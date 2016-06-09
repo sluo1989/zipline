@@ -13,7 +13,7 @@ from zipline.errors import UnsupportedPipelineColumn
 from zipline.pipeline import CustomFactor, Pipeline
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.engine import SimplePipelineEngine
-from zipline.pipeline.factors import Returns
+from zipline.pipeline.factors import FactorSlice, Returns
 from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.testing import check_arrays
 from zipline.testing.fixtures import WithTradingEnvironment, ZiplineTestCase
@@ -58,6 +58,10 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
         )
 
     def test_slice(self):
+        """
+        Test that slices can be created by indexing into a term, and that they
+        have the correct shape when used as inputs.
+        """
         my_asset_column = 0
         start_date_index = 5
         end_date_index = 9
@@ -68,6 +72,7 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
 
         returns = Returns(window_length=2)
         returns_slice = returns[my_asset]
+        self.assertIsInstance(returns_slice, FactorSlice)
 
         class UsesSlicedInput(CustomFactor):
             window_length = 3
@@ -92,7 +97,12 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
             pipe, self.dates[start_date_index], self.dates[end_date_index],
         )
 
-        # Test that slices cannot be added as a pipeline column.
+    def test_adding_slice_column(self):
+        """
+        Test that slices cannot be added as a pipeline column.
+        """
+        my_asset = self.asset_finder.retrieve_asset(self.sids[0])
+
         with self.assertRaises(UnsupportedPipelineColumn):
             pipe = Pipeline(columns={'open_slice': OpenPrice()[my_asset]})
 
@@ -101,6 +111,9 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
             pipe.add(OpenPrice()[my_asset], 'open_slice')
 
     def test_single_column_output(self):
+        """
+        Tests for custom factors that compute a 1D out.
+        """
         start_date_index = 5
         end_date_index = 9
         alternating_mask = (AssetIDPlusDay() % 2).eq(0)

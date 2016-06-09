@@ -41,7 +41,7 @@ class Pipeline(object):
             columns = {}
         for term in columns.values():
             if term.ndim == 1:
-                raise UnsupportedPipelineColumn()
+                raise UnsupportedPipelineColumn(termname=type(term).__name__)
         self._columns = columns
         self._screen = screen
 
@@ -78,7 +78,7 @@ class Pipeline(object):
             named `name`.
         """
         if term.ndim == 1:
-            raise UnsupportedPipelineColumn()
+            raise UnsupportedPipelineColumn(termname=type(term).__name__)
 
         columns = self.columns
         if name in columns:

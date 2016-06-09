@@ -1253,8 +1253,6 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
         num_days = end_date_index - start_date_index + 1
         num_assets = len(assets)
 
-        returns = Returns(window_length=returns_length)
-
         cascading_mask = \
             AssetIDPlusDay() < (sids[-1] + dates[start_date_index].day)
         expected_cascading_mask_result = make_cascading_boolean_array(
@@ -1313,6 +1311,7 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
             # (correlation_length - 1) days prior to our start date. This is
             # because we need (correlation_length - 1) extra days of returns to
             # compute our expected correlations.
+            returns = Returns(window_length=returns_length)
             results = self.engine.run_pipeline(
                 Pipeline(columns={'returns': returns}),
                 dates[start_date_index - (correlation_length - 1)],
@@ -1370,8 +1369,6 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
         my_asset = assets[my_asset_column]
         num_days = end_date_index - start_date_index + 1
         num_assets = len(assets)
-
-        returns = Returns(window_length=returns_length)
 
         cascading_mask = \
             AssetIDPlusDay() < (sids[-1] + dates[start_date_index].day)
@@ -1435,6 +1432,7 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
             # prior to our start date. This is because we need
             # (regression_length - 1) extra days of returns to compute our
             # expected regressions.
+            returns = Returns(window_length=returns_length)
             results = self.engine.run_pipeline(
                 Pipeline(columns={'returns': returns}),
                 dates[start_date_index - (regression_length - 1)],

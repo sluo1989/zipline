@@ -628,18 +628,37 @@ class Factor(RestrictedDTypeMixin, ComputableTerm):
         """
         return Rank(self, method=method, ascending=ascending, mask=mask)
 
-    def rolling_pearson(self,
-                        target_slice,
-                        correlation_length,
-                        mask=NotSpecified):
-        return RollingPearson(self, target_slice, correlation_length, mask)
-
-    def rolling_spearman(self,
+    @expect_types(
+        target_slice=Slice,
+        correlation_length=int,
+        mask=(Filter, NotSpecifiedType),
+    )
+    def rolling_pearsonr(self,
                          target_slice,
                          correlation_length,
                          mask=NotSpecified):
+        """
+        """
+        return RollingPearson(self, target_slice, correlation_length, mask)
+
+    @expect_types(
+        target_slice=Slice,
+        correlation_length=int,
+        mask=(Filter, NotSpecifiedType),
+    )
+    def rolling_spearmanr(self,
+                          target_slice,
+                          correlation_length,
+                          mask=NotSpecified):
+        """
+        """
         return RollingSpearman(self, target_slice, correlation_length, mask)
 
+    @expect_types(
+        target_slice=Slice,
+        regression_length=int,
+        mask=(Filter, NotSpecifiedType),
+    )
     def rolling_linear_regression(self,
                                   target_slice,
                                   regression_length,

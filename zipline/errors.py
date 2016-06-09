@@ -670,6 +670,6 @@ class ScheduleFunctionWithoutCalendar(ZiplineError):
 
 class UnsupportedPipelineColumn(ZiplineError):
     msg = (
-        "Adding single-column terms as pipeline columns is not currently "
-        "supported."
+        "{termname} cannot be added as a column. Adding single-column terms "
+        "as pipeline columns is not currently supported."
     )
