@@ -88,6 +88,8 @@ class RollingPearsonOfReturns(RollingPearson):
                 returns_length,
                 correlation_length,
                 mask=NotSpecified):
+        # Use the `SingleAsset` filter here because it protects against
+        # inputting a non-existent target asset.
         returns = Returns(
             window_length=returns_length,
             mask=(AssetExists() | SingleAsset(asset=target)),
@@ -136,6 +138,8 @@ class RollingSpearmanOfReturns(RollingSpearman):
                 returns_length,
                 correlation_length,
                 mask=NotSpecified):
+        # Use the `SingleAsset` filter here because it protects against
+        # inputting a non-existent target asset.
         returns = Returns(
             window_length=returns_length,
             mask=(AssetExists() | SingleAsset(asset=target)),
@@ -251,6 +255,8 @@ class RollingLinearRegressionOfReturns(RollingLinearRegression):
                 returns_length,
                 regression_length,
                 mask=NotSpecified):
+        # Use the `SingleAsset` filter here because it protects against
+        # inputting a non-existent target asset.
         returns = Returns(
             window_length=returns_length,
             mask=(AssetExists() | SingleAsset(asset=target)),

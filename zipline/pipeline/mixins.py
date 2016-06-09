@@ -182,13 +182,7 @@ class CustomTermMixin(object):
                 out_row = out[idx][col_mask]
                 inputs = self._format_inputs(windows, col_mask)
 
-                compute(
-                    date,
-                    masked_assets,
-                    out_row,
-                    *inputs,
-                    **params
-                )
+                compute(date, masked_assets, out_row, *inputs, **params)
                 out[idx][col_mask] = out_row
         return out
 

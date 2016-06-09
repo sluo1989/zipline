@@ -28,7 +28,7 @@ class Slice(object):
             mask=term.mask,
             dtype=term.dtype,
             missing_value=term.missing_value,
-            window_safe=True,
+            window_safe=term.window_safe,
             ndim=1,
         )
 

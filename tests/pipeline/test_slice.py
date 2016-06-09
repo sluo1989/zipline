@@ -9,11 +9,15 @@ from pandas import (
     Timestamp,
 )
 
-from zipline.errors import UnsupportedPipelineColumn
+from zipline.errors import NonWindowSafeInput, UnsupportedPipelineColumn
 from zipline.pipeline import CustomFactor, Pipeline
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.engine import SimplePipelineEngine
-from zipline.pipeline.factors import FactorSlice, Returns
+from zipline.pipeline.factors import (
+    FactorSlice,
+    Returns,
+    SimpleMovingAverage,
+)
 from zipline.pipeline.loaders.frame import DataFrameLoader
 from zipline.testing import check_arrays
 from zipline.testing.fixtures import WithTradingEnvironment, ZiplineTestCase
@@ -110,6 +114,35 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
         with self.assertRaises(UnsupportedPipelineColumn):
             pipe.add(OpenPrice()[my_asset], 'open_slice')
 
+    def test_non_window_safe_slice(self):
+        """
+        Test that slices of non window safe terms are also non window safe.
+        """
+        start_date_index = 5
+        end_date_index = 9
+
+        my_asset = self.asset_finder.retrieve_asset(self.sids[0])
+
+        # SimpleMovingAverage is not window safe.
+        sma = SimpleMovingAverage(
+            inputs=[USEquityPricing.close], window_length=3,
+        )
+        sma_slice = sma[my_asset]
+
+        class UsesSlicedInput(CustomFactor):
+            window_length = 3
+            inputs = [sma_slice]
+
+            def compute(self, today, assets, out, sma_slice):
+                pass
+
+        with self.assertRaises(NonWindowSafeInput):
+            self.engine.run_pipeline(
+                Pipeline(columns={'uses_sliced_input': UsesSlicedInput()}),
+                self.dates[start_date_index],
+                self.dates[end_date_index],
+            )
+
     def test_single_column_output(self):
         """
         Tests for custom factors that compute a 1D out.
@@ -121,6 +154,7 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
         class SingleColumnOutput(CustomFactor):
             window_length = 3
             inputs = [USEquityPricing.close]
+            window_safe = True
             ndim = 1
 
             def compute(self, today, assets, out, close):

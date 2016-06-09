@@ -88,8 +88,6 @@ class Term(with_metaclass(ABCMeta, object)):
             missing_value = cls.missing_value
         if ndim is NotSpecified:
             ndim = cls.ndim
-        if ndim == 1:
-            window_safe = True
         if window_safe is NotSpecified:
             window_safe = cls.window_safe
 
