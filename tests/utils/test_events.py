@@ -333,7 +333,7 @@ class TestStatelessRules(RuleTestCase):
         should_trigger on the first day of a trading environment.
         """
         cal = get_calendar('NYSE')
-        rule = NthTradingDayOfWeek(0)
+        rule = NthTradingDayOfWeek(0, False)
         rule.cal = cal
         self.assertTrue(
             rule.should_trigger(self.nyse_cal.all_trading_days[0])
@@ -342,7 +342,7 @@ class TestStatelessRules(RuleTestCase):
     @subtest(param_range(MAX_WEEK_RANGE), 'n')
     def test_NthTradingDayOfWeek(self, n):
         cal = get_calendar('NYSE')
-        rule = NthTradingDayOfWeek(n)
+        rule = NthTradingDayOfWeek(n, False)
         rule.cal = cal
         should_trigger = rule.should_trigger
         prev_day = self.sept_week[0].date()
@@ -360,7 +360,7 @@ class TestStatelessRules(RuleTestCase):
     @subtest(param_range(MAX_WEEK_RANGE), 'n')
     def test_NDaysBeforeLastTradingDayOfWeek(self, n):
         cal = get_calendar('NYSE')
-        rule = NDaysBeforeLastTradingDayOfWeek(n)
+        rule = NDaysBeforeLastTradingDayOfWeek(n, True)
         rule.cal = cal
         should_trigger = rule.should_trigger
         for m in self.sept_week:
@@ -427,7 +427,8 @@ class TestStatelessRules(RuleTestCase):
                 [x - timedelta(days=rule_offset) for x in trigger_dates]
 
         rule.cal = self.nyse_cal
-        should_trigger = rule(rule_offset).should_trigger
+        invert = type == 'week_end'
+        should_trigger = rule(rule_offset, invert).should_trigger
 
         # If offset is 4, there is not enough trading days in the short week,
         # and so it should not trigger
@@ -455,8 +456,8 @@ class TestStatelessRules(RuleTestCase):
 
     @parameterized.expand([('week_start',), ('week_end',)])
     def test_week_and_time_composed_rule(self, type):
-        week_rule = NthTradingDayOfWeek(0) if type == 'week_start' else \
-            NDaysBeforeLastTradingDayOfWeek(4)
+        week_rule = NthTradingDayOfWeek(0, False) if type == 'week_start' \
+            else NDaysBeforeLastTradingDayOfWeek(4, True)
         time_rule = AfterOpen(minutes=60)
 
         week_rule.cal = self.nyse_cal
@@ -487,7 +488,7 @@ class TestStatelessRules(RuleTestCase):
     @subtest(param_range(MAX_MONTH_RANGE), 'n')
     def test_NthTradingDayOfMonth(self, n):
         cal = get_calendar('NYSE')
-        rule = NthTradingDayOfMonth(n)
+        rule = NthTradingDayOfMonth(n, False)
         rule.cal = cal
         should_trigger = rule.should_trigger
         for n_tdays, d in enumerate(self.sept_days):
@@ -500,7 +501,7 @@ class TestStatelessRules(RuleTestCase):
     @subtest(param_range(MAX_MONTH_RANGE), 'n')
     def test_NDaysBeforeLastTradingDayOfMonth(self, n):
         cal = get_calendar('NYSE')
-        rule = NDaysBeforeLastTradingDayOfMonth(n)
+        rule = NDaysBeforeLastTradingDayOfMonth(n, True)
         rule.cal = cal
         should_trigger = rule.should_trigger
         for n_days_before, d in enumerate(reversed(self.sept_days)):
