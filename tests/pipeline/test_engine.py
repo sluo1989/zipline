@@ -1243,8 +1243,8 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
         `RollingSpearmanOfReturns`.
         """
         my_asset_column = 0
-        start_date_index = 5
-        end_date_index = 9
+        start_date_index = 14
+        end_date_index = 18
 
         sids = self.sids
         dates = self.dates
@@ -1360,8 +1360,8 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
         Tests for the built-in factor `RollingLinearRegressionOfReturns`.
         """
         my_asset_column = 0
-        start_date_index = 5
-        end_date_index = 9
+        start_date_index = 14
+        end_date_index = 18
 
         sids = self.sids
         dates = self.dates
@@ -1428,10 +1428,10 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
                     output_results[output], nan,
                 )
 
-            # Run a separate pipeline that calculates returns starting 2 days
-            # prior to our start date. This is because we need
-            # (regression_length - 1) extra days of returns to compute our
-            # expected regressions.
+            # Run a separate pipeline that calculates returns starting
+            # (regression_length - 1) days prior to our start date. This is
+            # because we need (regression_length - 1) extra days of returns to
+            # compute our expected regressions.
             returns = Returns(window_length=returns_length)
             results = self.engine.run_pipeline(
                 Pipeline(columns={'returns': returns}),
@@ -1473,8 +1473,8 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
         `RollingLinearRegressionOfReturns` raise the proper exception when
         given a nonexistent target asset.
         """
-        start_date_index = 6
-        end_date_index = 10
+        start_date_index = 14
+        end_date_index = 18
         my_asset = Equity(0)
 
         # This filter is arbitrary; the important thing is that we test each
