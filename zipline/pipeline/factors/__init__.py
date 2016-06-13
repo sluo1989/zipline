@@ -1,7 +1,6 @@
 from .factor import (
     CustomFactor,
     Factor,
-    FactorSlice,
     Latest,
     RecarrayField,
 )
@@ -44,7 +43,6 @@ __all__ = [
     'ExponentialWeightedMovingStdDev',
     'Factor',
     'FastStochasticOscillator',
-    'FactorSlice',
     'Latest',
     'MaxDrawdown',
     'RecarrayField',

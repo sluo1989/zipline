@@ -1,8 +1,10 @@
 
 from numpy import searchsorted
 
+from zipline.pipeline.term import ComputableTerm
 
-class Slice(object):
+
+class Slice(ComputableTerm):
     """
     Mixin for extracting a single column of a Term's output.
 

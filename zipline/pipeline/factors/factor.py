@@ -1343,11 +1343,7 @@ class CustomFactor(PositiveWindowLengthMixin, CustomTermMixin, Factor):
 
     @expect_types(key=Asset)
     def __getitem__(self, key):
-        return FactorSlice(self, key)
-
-
-class FactorSlice(Slice, Factor, SingleInputMixin):
-    pass
+        return Slice(self, key)
 
 
 class RecarrayField(SingleInputMixin, Factor):
