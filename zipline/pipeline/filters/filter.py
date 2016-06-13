@@ -190,7 +190,7 @@ class Filter(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(key=Asset)
     def __getitem__(self, key):
-        return FilterSlice(self, key)
+        return Slice(self, key)
 
     def _validate(self):
         # Run superclass validation first so that we handle `dtype not passed`
@@ -427,10 +427,6 @@ class ArrayPredicate(SingleInputMixin, Filter):
     def _compute(self, arrays, dates, assets, mask):
         data = arrays[0]
         return self._op(data, *self._opargs) & mask
-
-
-class FilterSlice(Slice, Filter, SingleInputMixin):
-    pass
 
 
 class Latest(LatestMixin, CustomFilter):

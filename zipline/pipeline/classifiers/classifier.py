@@ -57,7 +57,7 @@ class Classifier(RestrictedDTypeMixin, ComputableTerm):
 
     @expect_types(key=Asset)
     def __getitem__(self, key):
-        return ClassifierSlice(self, key)
+        return Slice(self, key)
 
     def isnull(self):
         """
@@ -376,10 +376,6 @@ class CustomClassifier(PositiveWindowLengthMixin,
         # categories for a LabelArray are until it's actually been loaded, so
         # we need to look at the underlying data.
         return windows[0].data.empty_like(shape)
-
-
-class ClassifierSlice(Slice, Classifier, SingleInputMixin):
-    pass
 
 
 class Latest(LatestMixin, CustomClassifier):

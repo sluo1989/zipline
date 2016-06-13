@@ -24,13 +24,12 @@ from zipline.pipeline import (
     Filter,
     TermGraph,
 )
-from zipline.pipeline.classifiers import ClassifierSlice
 from zipline.pipeline.data import Column, DataSet
 from zipline.pipeline.data.testing import TestingDataSet
-from zipline.pipeline.factors import FactorSlice, RecarrayField
-from zipline.pipeline.filters import FilterSlice
-from zipline.pipeline.term import AssetExists, NotSpecified
 from zipline.pipeline.expression import NUMEXPR_MATH_FUNCS
+from zipline.pipeline.factors import RecarrayField
+from zipline.pipeline.slice import Slice
+from zipline.pipeline.term import AssetExists, NotSpecified
 from zipline.testing import parameter_space
 from zipline.testing.predicates import assert_equal, assert_raises
 from zipline.utils.numpy_utils import (
@@ -288,15 +287,15 @@ class ObjectIdentityTestCase(TestCase):
 
         f = GenericCustomFactor()
         f_slice = f[my_asset]
-        self.assertIs(f_slice, FactorSlice(GenericCustomFactor(), my_asset))
+        self.assertIs(f_slice, Slice(GenericCustomFactor(), my_asset))
 
         f = GenericFilter()
         f_slice = f[my_asset]
-        self.assertIs(f_slice, FilterSlice(GenericFilter(), my_asset))
+        self.assertIs(f_slice, Slice(GenericFilter(), my_asset))
 
         c = GenericClassifier()
         c_slice = c[my_asset]
-        self.assertIs(c_slice, ClassifierSlice(GenericClassifier(), my_asset))
+        self.assertIs(c_slice, Slice(GenericClassifier(), my_asset))
 
     def test_instance_non_caching(self):
 

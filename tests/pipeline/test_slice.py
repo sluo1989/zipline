@@ -15,7 +15,6 @@ from zipline.pipeline import CustomFactor, Pipeline
 from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.engine import SimplePipelineEngine
 from zipline.pipeline.factors import (
-    FactorSlice,
     Returns,
     RollingLinearRegressionOfReturns,
     RollingPearsonOfReturns,
@@ -23,6 +22,7 @@ from zipline.pipeline.factors import (
     SimpleMovingAverage,
 )
 from zipline.pipeline.loaders.frame import DataFrameLoader
+from zipline.pipeline.slice import Slice
 from zipline.testing import check_arrays, parameter_space
 from zipline.testing.fixtures import WithTradingEnvironment, ZiplineTestCase
 
@@ -42,7 +42,7 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
     def init_class_fixtures(cls):
         super(SliceTestCase, cls).init_class_fixtures()
 
-        day = cls.env.trading_day
+        day = cls.trading_schedule.day
         sids = cls.sids
 
         cls.dates = dates = date_range(
@@ -79,7 +79,7 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
 
         returns = Returns(window_length=2)
         returns_slice = returns[my_asset]
-        self.assertIsInstance(returns_slice, FactorSlice)
+        self.assertIsInstance(returns_slice, Slice)
 
         class UsesSlicedInput(CustomFactor):
             window_length = 3
