@@ -1380,7 +1380,6 @@ class ParameterizedFactorTestCase(WithTradingEnvironment, ZiplineTestCase):
                     for output in outputs
                 },
             )
-
             if mask is not NotSpecified:
                 pipeline.add(mask, 'mask')
 

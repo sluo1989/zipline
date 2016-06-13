@@ -6,7 +6,7 @@ from zipline.pipeline.term import ComputableTerm
 
 class Slice(ComputableTerm):
     """
-    Mixin for extracting a single column of a Term's output.
+    Term for extracting a single column of a another term's output.
 
     Parameters
     ----------
