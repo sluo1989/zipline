@@ -41,7 +41,9 @@ from zipline.data.us_equity_pricing import (
 from zipline.finance.trading import TradingEnvironment
 from zipline.finance.order import ORDER_STATUS
 from zipline.lib.labelarray import LabelArray
+from zipline.pipeline.data import USEquityPricing
 from zipline.pipeline.engine import SimplePipelineEngine
+from zipline.pipeline.factors import CustomFactor
 from zipline.pipeline.loaders.testing import make_seeded_random_loader
 from zipline.utils import security_list
 from zipline.utils.input_validation import expect_dimensions
@@ -1445,3 +1447,39 @@ def patch_read_csv(url_map, module=pd, strict=False):
 
     with patch.object(module, 'read_csv', patched_read_csv):
         yield
+
+
+####################################
+# Shared factors for pipeline tests.
+####################################
+
+class AssetID(CustomFactor):
+    """
+    CustomFactor that returns the AssetID of each asset.
+
+    Useful for providing a Factor that produces a different value for each
+    asset.
+    """
+    window_length = 1
+    # HACK: We currently decide whether to load or compute a Term based on the
+    # length of its inputs. This means we have to provide a dummy input.
+    inputs = [USEquityPricing.close]
+
+    def compute(self, today, assets, out, close):
+        out[:] = assets
+
+
+class AssetIDPlusDay(CustomFactor):
+    window_length = 1
+    inputs = [USEquityPricing.close]
+
+    def compute(self, today, assets, out, close):
+        out[:] = assets + today.day
+
+
+class OpenPrice(CustomFactor):
+    window_length = 1
+    inputs = [USEquityPricing.open]
+
+    def compute(self, today, assets, out, open):
+        out[:] = open

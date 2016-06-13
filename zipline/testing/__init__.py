@@ -1,10 +1,13 @@
 from .core import (  # noqa
+    AssetID,
+    AssetIDPlusDay,
     EPOCH,
     ExceptionSource,
     ExplodingObject,
     FakeDataPortal,
     FetcherDataPortal,
     MockDailyBarReader,
+    OpenPrice,
     add_security_data,
     all_pairs_matching_predicate,
     all_subindices,

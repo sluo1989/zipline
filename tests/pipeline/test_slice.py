@@ -22,15 +22,13 @@ from zipline.pipeline.factors import (
     SimpleMovingAverage,
 )
 from zipline.pipeline.loaders.frame import DataFrameLoader
-from zipline.pipeline.slice import Slice
-from zipline.testing import check_arrays, parameter_space
-from zipline.testing.fixtures import WithTradingEnvironment, ZiplineTestCase
-
-from .test_engine import (
+from zipline.testing import (
     AssetID,
-    AssetIDPlusDay,
+    check_arrays,
     OpenPrice,
+    parameter_space,
 )
+from zipline.testing.fixtures import WithTradingEnvironment, ZiplineTestCase
 
 
 class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
@@ -71,15 +69,14 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
         have the correct shape when used as inputs.
         """
         my_asset_column = 0
-        start_date_index = 5
-        end_date_index = 9
+        start_date_index = 14
+        end_date_index = 18
 
         my_asset = self.asset_finder.retrieve_asset(self.sids[0])
         my_asset_only = (AssetID().eq(my_asset_column + 1))
 
         returns = Returns(window_length=2)
         returns_slice = returns[my_asset]
-        self.assertIsInstance(returns_slice, Slice)
 
         class UsesSlicedInput(CustomFactor):
             window_length = 3
@@ -110,20 +107,21 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
         Test that slices cannot be added as a pipeline column.
         """
         my_asset = self.asset_finder.retrieve_asset(self.sids[0])
+        open_slice = OpenPrice()[my_asset]
 
         with self.assertRaises(UnsupportedPipelineColumn):
-            Pipeline(columns={'open_slice': OpenPrice()[my_asset]})
+            Pipeline(columns={'open_slice': open_slice})
 
         pipe = Pipeline(columns={})
         with self.assertRaises(UnsupportedPipelineColumn):
-            pipe.add(OpenPrice()[my_asset], 'open_slice')
+            pipe.add(open_slice, 'open_slice')
 
     def test_non_window_safe_slice(self):
         """
         Test that slices of non window safe terms are also non window safe.
         """
-        start_date_index = 5
-        end_date_index = 9
+        start_date_index = 14
+        end_date_index = 18
 
         my_asset = self.asset_finder.retrieve_asset(self.sids[0])
 
@@ -134,7 +132,7 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
         sma_slice = sma[my_asset]
 
         class UsesSlicedInput(CustomFactor):
-            window_length = 3
+            window_length = 1
             inputs = [sma_slice]
 
             def compute(self, today, assets, out, sma_slice):
@@ -145,6 +143,42 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
                 Pipeline(columns={'uses_sliced_input': UsesSlicedInput()}),
                 self.dates[start_date_index],
                 self.dates[end_date_index],
+            )
+
+    def test_window_safety_of_slices(self):
+        """
+        Test that slices correctly inherit the `window_safe` property of the
+        term from which they are derived.
+        """
+        my_asset_column = 0
+        my_asset = self.asset_finder.retrieve_asset(self.sids[my_asset_column])
+
+        # These numbers are arbitrary for the purpose of this test.
+        returns_length = 2
+        correlation_length = 10
+
+        class MyFactor(CustomFactor):
+            window_length = 1
+            inputs = [USEquityPricing.close]
+
+            def compute(self, today, assets, out, close):
+                out[:] = close
+
+        my_factor = MyFactor()
+        my_factor_slice = my_factor[my_asset]
+        returns = Returns(window_length=returns_length)
+        returns_slice = returns[my_asset]
+
+        with self.assertRaises(NonWindowSafeInput):
+            my_factor.rolling_pearsonr(
+                target_slice=returns_slice,
+                correlation_length=correlation_length,
+            )
+
+        with self.assertRaises(NonWindowSafeInput):
+            returns.rolling_pearsonr(
+                target_slice=my_factor_slice,
+                correlation_length=correlation_length,
             )
 
     @parameter_space(returns_length=[2, 3], correlation_length=[3, 4])
@@ -240,83 +274,3 @@ class SliceTestCase(WithTradingEnvironment, ZiplineTestCase):
         expected_regression_results = results['expected_regression'].unstack()
 
         assert_frame_equal(regression_results, expected_regression_results)
-
-    def test_window_safety_of_slices(self):
-        """
-        Test that slices correctly inherit the `window_safe` property of the
-        term from which they are derived.
-        """
-        my_asset_column = 0
-        my_asset = self.asset_finder.retrieve_asset(self.sids[my_asset_column])
-
-        # These numbers are arbitrary for the purpose of this test.
-        returns_length = 2
-        correlation_length = 10
-
-        class MyFactor(CustomFactor):
-            window_length = 1
-            inputs = [USEquityPricing.close]
-
-            def compute(self, today, assets, out, close):
-                out[:] = close
-
-        my_factor = MyFactor()
-        my_factor_slice = my_factor[my_asset]
-        returns = Returns(window_length=returns_length)
-        returns_slice = returns[my_asset]
-
-        with self.assertRaises(NonWindowSafeInput):
-            my_factor.rolling_pearsonr(
-                target_slice=returns_slice,
-                correlation_length=correlation_length,
-            )
-
-        with self.assertRaises(NonWindowSafeInput):
-            returns.rolling_pearsonr(
-                target_slice=my_factor_slice,
-                correlation_length=correlation_length,
-            )
-
-    def test_single_column_output(self):
-        """
-        Tests for custom factors that compute a 1D out.
-        """
-        start_date_index = 5
-        end_date_index = 9
-        alternating_mask = (AssetIDPlusDay() % 2).eq(0)
-
-        class SingleColumnOutput(CustomFactor):
-            window_length = 3
-            inputs = [USEquityPricing.close]
-            window_safe = True
-            ndim = 1
-
-            def compute(self, today, assets, out, close):
-                # Because we specified ndim as 1, `out` should be a singleton
-                # array but `close` should be a regular sized input.
-                assert out.shape == (1,)
-                assert close.shape == (3, 1)
-                out[:] = close.mean()
-
-        class Demean(CustomFactor):
-            window_length = 1
-            inputs = [USEquityPricing.close, SingleColumnOutput()]
-
-            def compute(self, today, assets, out, close, avg_close):
-                # Make sure that `avg_close` has the correct shape. That is, it
-                # should always have one column regardless of any mask passed
-                # to `Demean`.
-                assert avg_close.shape == (1, 1)
-
-        columns = {
-            'demean': Demean(),
-            'masked_demean': Demean(mask=alternating_mask),
-        }
-
-        # Assertions about the expected slice data are made in the `compute`
-        # function of our custom factors above.
-        self.engine.run_pipeline(
-            Pipeline(columns=columns),
-            self.dates[start_date_index],
-            self.dates[end_date_index],
-        )

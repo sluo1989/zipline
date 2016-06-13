@@ -1433,7 +1433,6 @@ class RollingPearson(_RollingCorrelation):
     Most users should call Factor.rolling_pearsonr rather than directly
     construct an instance of this class.
     """
-
     def compute(self, today, assets, out, factor_data, slice_data):
         slice_data_column = slice_data[:, 0]
         for i in range(len(out)):
@@ -1472,7 +1471,6 @@ class RollingSpearman(_RollingCorrelation):
     Most users should call Factor.rolling_spearmanr rather than directly
     construct an instance of this class.
     """
-
     def compute(self, today, assets, out, factor_data, slice_data):
         slice_data_column = slice_data[:, 0]
         for i in range(len(out)):

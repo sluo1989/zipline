@@ -74,9 +74,12 @@ from zipline.pipeline.loaders.synthetic import (
 )
 from zipline.pipeline.term import NotSpecified
 from zipline.testing import (
+    AssetID,
+    AssetIDPlusDay,
     check_arrays,
     make_alternating_boolean_array,
     make_cascading_boolean_array,
+    OpenPrice,
     parameter_space,
     product_upper_triangle,
 )
@@ -95,38 +98,6 @@ class RollingSumDifference(CustomFactor):
 
     def compute(self, today, assets, out, open, close):
         out[:] = (open - close).sum(axis=0)
-
-
-class AssetID(CustomFactor):
-    """
-    CustomFactor that returns the AssetID of each asset.
-
-    Useful for providing a Factor that produces a different value for each
-    asset.
-    """
-    window_length = 1
-    # HACK: We currently decide whether to load or compute a Term based on the
-    # length of its inputs.  This means we have to provide a dummy input.
-    inputs = [USEquityPricing.close]
-
-    def compute(self, today, assets, out, close):
-        out[:] = assets
-
-
-class AssetIDPlusDay(CustomFactor):
-    window_length = 1
-    inputs = [USEquityPricing.close]
-
-    def compute(self, today, assets, out, close):
-        out[:] = assets + today.day
-
-
-class OpenPrice(CustomFactor):
-    window_length = 1
-    inputs = [USEquityPricing.open]
-
-    def compute(self, today, assets, out, open):
-        out[:] = open
 
 
 class MultipleOutputs(CustomFactor):
